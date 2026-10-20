@@ -38,3 +38,8 @@ run/
 **/src/generated/**/.cache/
 repo/
 !**/src/**/repo/
+
+### Webcam sidecar leftovers ###
+.build/
+models/
+*.mlmodelc
