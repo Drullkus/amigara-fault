@@ -7,15 +7,20 @@ import Vision
 //
 // Written by Claude Code; conversation transcript:
 // llm/transcripts/transcript_2026-10-20_06-06_cf6a8f39-437b-4cd7-9962-fcfbb1efa030.md
+// Written by Claude Code; conversation transcript:
+// llm/transcripts/transcript_2026-10-20_07-18_eb73890b-4f17-4ace-abdd-6dda67cd169b.md
+
+/// Name of the Syphon server. TouchDesigner lists it as "webcam-depth - webcam-depth" (app name, then server name).
+let syphonServerName = "webcam-depth"
 
 /// Command-line options with their defaults.
 ///
 /// Written by Claude Code; conversation transcript:
 /// llm/transcripts/transcript_2026-10-20_06-06_cf6a8f39-437b-4cd7-9962-fcfbb1efa030.md
+/// Written by Claude Code; conversation transcript:
+/// llm/transcripts/transcript_2026-10-20_07-18_eb73890b-4f17-4ace-abdd-6dda67cd169b.md
 struct Options {
     var camera = "C920"
-    var host = "127.0.0.1"
-    var port: UInt16 = 47011
     var width = 518
     var height = 392
     var alpha: Float = 0.5
@@ -31,9 +36,7 @@ struct Options {
     static let usage = """
     usage: webcam-depth [options]
       --camera <name fragment>   camera to open, matched against the device name (default: C920)
-      --host <host>              server host (default: 127.0.0.1)
-      --port <port>              server TCP port (default: 47011)
-      --size <w>x<h>             output frame size (default: 518x392, the model's native size)
+      --size <w>x<h>             published texture size (default: 518x392, the model's native size)
       --alpha <0..1>             EMA weight of the newest depth frame; 1 disables smoothing (default: 0.5)
       --quality fast|balanced|accurate   Vision person segmentation quality (default: balanced)
       --model <path>             .mlpackage or .mlmodelc to use for depth
@@ -54,10 +57,6 @@ struct Options {
             let a = args[i]
             switch a {
             case "--camera": o.camera = try value(a)
-            case "--host": o.host = try value(a)
-            case "--port":
-                guard let p = UInt16(try value(a)) else { throw OptionError.badValue(a) }
-                o.port = p
             case "--size":
                 let parts = try value(a).lowercased().split(separator: "x")
                 guard parts.count == 2, let w = Int(parts[0]), let h = Int(parts[1]), w > 0, h > 0, w < 65536, h < 65536 else {
@@ -93,6 +92,8 @@ struct Options {
 ///
 /// Written by Claude Code; conversation transcript:
 /// llm/transcripts/transcript_2026-10-20_06-06_cf6a8f39-437b-4cd7-9962-fcfbb1efa030.md
+/// Written by Claude Code; conversation transcript:
+/// llm/transcripts/transcript_2026-10-20_07-18_eb73890b-4f17-4ace-abdd-6dda67cd169b.md
 enum OptionError: Error, CustomStringConvertible {
     case missingValue(String)
     case badValue(String)
@@ -153,8 +154,13 @@ func run() -> Int32 {
         return 1
     }
 
-    let encoder = FrameEncoder(width: options.width, height: options.height)
-    let sender = FrameSender(host: options.host, port: options.port)
+    let publisher: SyphonPublisher
+    do {
+        publisher = try SyphonPublisher(name: syphonServerName, width: options.width, height: options.height)
+    } catch {
+        Log.line("Syphon setup failed: \(error)")
+        return 1
+    }
 
     // Per-second statistics, updated on the capture queue only.
     var captured = 0
@@ -163,9 +169,9 @@ func run() -> Int32 {
     var segmentationTotal = 0.0
     var depthTotal = 0.0
     var lastReport = Date()
-    var lastSent = 0
+    var lastPublished = 0
 
-    camera.onFrame = { pixelBuffer, captureMicros in
+    camera.onFrame = { pixelBuffer, _ in
         captured += 1
         do {
             let frame = try pipeline.process(pixelBuffer)
@@ -173,7 +179,7 @@ func run() -> Int32 {
             inferenceTotal += frame.inferenceMillis
             segmentationTotal += frame.segmentationMillis
             depthTotal += frame.depthMillis
-            sender.submit(encoder.encode(mask: frame.mask, depth: frame.depth, captureMicros: captureMicros))
+            try publisher.publish(mask: frame.mask, depth: frame.depth)
         } catch {
             Log.line("frame failed: \(error)")
         }
@@ -182,23 +188,28 @@ func run() -> Int32 {
         if dt >= 1 {
             let fps = Double(processed) / dt
             let n = Double(max(processed, 1))
-            let sent = sender.sentFrames - lastSent
-            Log.line(String(format: "%.1f fps | infer %.1f ms (mask %.1f + depth %.1f) | sent %d | dropped %d | %@",
-                            fps, inferenceTotal / n, segmentationTotal / n, depthTotal / n, sent, sender.droppedFrames,
-                            sender.isConnected ? "connected" : "no server"))
-            captured = 0; processed = 0; inferenceTotal = 0; segmentationTotal = 0; depthTotal = 0; lastReport = now; lastSent = sender.sentFrames
+            let published = publisher.publishedFrames - lastPublished
+            Log.line(String(format: "%.1f fps | infer %.1f ms (mask %.1f + depth %.1f) | published %d | %@",
+                            fps, inferenceTotal / n, segmentationTotal / n, depthTotal / n, published,
+                            publisher.hasClients ? "clients attached" : "no clients"))
+            captured = 0; processed = 0; inferenceTotal = 0; segmentationTotal = 0; depthTotal = 0; lastReport = now; lastPublished = publisher.publishedFrames
         }
     }
 
-    Log.line("camera \(device.localizedName), output \(options.width)x\(options.height), alpha \(options.alpha), target \(options.host):\(options.port)")
+    Log.line("camera \(device.localizedName), Syphon server \"\(syphonServerName)\" \(options.width)x\(options.height) BGRA8 (red mask, green depth), alpha \(options.alpha)")
     camera.start()
-    signal(SIGINT) { _ in
+    // Retire the Syphon server on Ctrl-C so clients see it go instead of waiting on a dead one.
+    signal(SIGINT, SIG_IGN)
+    let interrupt = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+    interrupt.setEventHandler {
         Log.line("stopping")
+        publisher.stop()
         exit(0)
     }
-    // dispatchMain never returns. Keep the camera, pipeline and sender alive for the life of the
-    // process; Swift would otherwise release them right after their last use above.
-    withExtendedLifetime((camera, pipeline, sender, encoder)) {
+    interrupt.activate()
+    // dispatchMain never returns. Keep the camera, pipeline and publisher alive for the life of
+    // the process; Swift would otherwise release them right after their last use above.
+    withExtendedLifetime((camera, pipeline, publisher, interrupt)) {
         dispatchMain()
     }
 }
