@@ -1,0 +1,11 @@
+# Runs the Java depth receiver demo in a container and publishes its port to the host.
+# The Swift sidecar runs on the Mac itself and connects to localhost:47011.
+# Written by Claude Code; conversation transcript:
+# llm/transcripts/transcript_2026-10-20_06-06_cf6a8f39-437b-4cd7-9962-fcfbb1efa030.md
+services:
+  depth-receiver:
+    build: .
+    image: amigara-fault/depth-receiver
+    ports:
+      - "47011:47011"
+    restart: unless-stopped

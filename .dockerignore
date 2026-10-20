@@ -1,0 +1,7 @@
+.git
+.gradle
+build
+.idea
+tools/webcam-depth/.build
+tools/webcam-depth/models
+llm

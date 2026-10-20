@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>dev.drullkus.amigara.webcam-depth</string>
+    <key>CFBundleName</key>
+    <string>webcam-depth</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>NSCameraUsageDescription</key>
+    <string>webcam-depth reads the webcam to make a person mask and a depth map for the Amigara Fault wall.</string>
+</dict>
+</plist>
