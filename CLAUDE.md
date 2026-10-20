@@ -6,16 +6,21 @@ Turn spatial depth into people-shaped holes in a wall.
 
 - Completed within 12 hours.
 - Generate a visual or spatial feed with silhouettes of people.
-  - Device not chosen yet.
-  - Processed by a server with a streamed output.
+  - Device: Xbox One Kinect v2 (time of flight, 512x424 depth at 30 fps, 0.5 to 4.5 m) with a USB 3 PC adapter. Chosen on 2026-10-19 after the research in `llm/transcripts/`.
+  - Read in TouchDesigner through the FreenectTD plugin.
+  - Fallback input: the webcam sidecar on branch `webcam-sidecar` (Apple Vision person mask plus Depth Anything V2 depth), to be re-pointed from TCP to a Syphon texture.
+  - Processed by TouchDesigner with a streamed NDI output.
 - Projector that displays fiducials for viewing applications to align.
   - Only the white pixels for the fiducials. Otherwise brighter light causes shadows to be more prominent.
-  - Unique fiducial for each corner.
-  - Server calibrates both silhouettes for alignment and projector for distortion.
+  - Unique fiducial for each corner: four ArUco 4x4 markers, ids 0 to 3, drawn and detected with the OpenCV that TouchDesigner bundles.
+  - Server calibrates both silhouettes for alignment and projector for distortion: a camera sees the projected markers, `cv2.findHomography` drives a Corner Pin TOP, and Stoner is the manual override.
   - Calibration toggle for displaying silhouettes from projector.
 - Displayed holes in the wall rendered based on the viewer's angle.
-  - Rendered using LWJGL.
+  - A separate viewing application renders the holes from the NDI stream and the fiducials. TouchDesigner renders the same look for preview and for an optional projector mode that follows one tracked viewer.
+  - Look: a dark tunnel with depth-shaded walls, lines parallel and perpendicular to the depth axis as in Junji Ito's drawings, and a slider that thins and contorts the shape as the tunnel gets deeper.
   - Must tolerate some projected fiducials getting occluded.
+
+The full plan is in `docs/touchdesigner-plan.md`.
 
 ## Tasks
 
@@ -23,17 +28,21 @@ If the user asks for a task from you, you are required to use AskUserQuestions t
 
 ## Versions
 
-- Java 25 toolchain with Gradle
-- LWJGL 3.4.3
-- OpenGL 4.1
-- Dear ImGui v1.93.0
+- TouchDesigner 2025.x on macOS 15 or newer, Apple Silicon.
+- TouchDesigner Non-Commercial license: every TOP is capped at 1280x1280, so the projector output is 1280x720.
+- FreenectTD plugin (bundles libfreenect2) for the Kinect v2. The official Kinect operators are Windows only.
+- TouchDesigner's bundled Python and OpenCV (`cv2`, including `cv2.aruco`). Do not install extra packages into TouchDesigner's Python.
+- Branch `webcam-sidecar` keeps the earlier Java 25 receiver and Swift 6 sidecar. Do not delete that branch.
 
 ## Codebase conventions
 
 - Documentation must be written in simple American English, following principles of ASD-STE100:
     - Unambiguous and instructive language.
     - Present tense and active tone.
-- Every package must be annotated with `@org.jspecify.annotations.NullMarked`.
+- `amigara.toe` at the repository root is a thin shell. Each subsystem is a component saved as `td/<name>.tox`: `depth`, `fiducials`, `warp`, `holes`, `output`.
+- Python lives in `td/scripts/` and GLSL in `td/shaders/`. Each DAT points at its file with the `file` parameter and syncs to it, so Git tracks readable code. Never keep code only inside a DAT.
+- Each `.tox` contains a Text DAT named `README` that says what the component does and carries the attribution line below.
+- Every Python file starts with a module docstring. Every GLSL file starts with a comment block.
 
 ## AI attribution procedure
 
@@ -42,7 +51,10 @@ The repository owner cites AI-generated work, so every session Claude works in m
 1. Transcripts live at `llm/transcripts/transcript_{start date, UTC}_{HH-MM, UTC}_{session uuid}.md` and are generated only by the owner, never on Claude's own initiative.
 2. Generate one with `python3 llm/tools/claude_transcript_to_md.py` from the repo root; it picks the most recent session for this project and names the file itself.
 3. A session may span several commits, so re-run the same command whenever the owner asks for an update and commit the changed transcript alongside the code; Git tracks its history.
-4. Every class Claude creates or modifies gets a class-level Javadoc line `<p>Written by Claude Code; conversation transcript: {@code llm/transcripts/transcript-....md}.` using the repo-relative path (a modified class that already cites an earlier transcript keeps that line and gains one for the new session).
+4. Every file Claude creates or modifies gets the line `Written by Claude Code; conversation transcript: llm/transcripts/transcript-....md` using the repo-relative path (a file that already cites an earlier transcript keeps that line and gains one for the new session):
+   - Java: a class-level Javadoc line `<p>Written by Claude Code; conversation transcript: {@code ...}.`
+   - Python: in the module docstring. GLSL: in the leading comment block. Markdown: a line under the title.
+   - `.tox`: in the `README` Text DAT of the component.
 5. Find the path to cite before the transcript exists with `python3 llm/tools/claude_transcript_to_md.py --print-path`.
 6. The desktop app sometimes resumes a conversation under a new session uuid; the tool detects this, renames the earlier transcript with `git mv`, and rewrites references in the project's text files, so check its output and stage the renamed file.
 7. Do not add the owner's email, token usage, request IDs or Claude's reasoning to anything committed; the tool already strips them from transcripts.
