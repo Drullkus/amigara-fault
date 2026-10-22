@@ -5,6 +5,7 @@ Turn spatial depth into people-shaped holes in a wall.
 ## Objectives
 
 - Completed within 12 hours.
+- The user must learn TouchDesigner. Claude is permitted to instruct the user and otherwise are forbidden to wiring TD networks for the user.
 - Generate a visual or spatial feed with silhouettes of people.
   - Device: Xbox One Kinect v2 (time of flight, 512x424 depth at 30 fps, 0.5 to 4.5 m) with a USB 3 PC adapter. Chosen on 2026-10-19 after the research in `llm/transcripts/`.
   - Read in TouchDesigner through the FreenectTD plugin.
