@@ -43,3 +43,8 @@ repo/
 .build/
 models/
 *.mlmodelc
+
+### TouchDesigner ###
+Backup/
+CrashAutoSave.*
+Plugins/

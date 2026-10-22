@@ -35,6 +35,7 @@ td/scripts/*.py             every Script TOP, CHOP, DAT and Execute DAT, synced 
 td/shaders/*.glsl           every GLSL TOP and GLSL MAT
 docs/touchdesigner-plan.md  this file
 tools/webcam-depth/models/  the Core ML model, gitignored, fetched by the sidecar branch's script
+Plugins/FreenectTOP.plugin  the FreenectTD plugin, gitignored, from its .pkg installer
 ```
 
 Rules:
@@ -162,10 +163,22 @@ If the Kinect fails on this Mac (section 7), spend hours 7 to 9 on the Syphon re
 5. **Dark room.** The markers must be bright enough for the Kinect's RGB camera. Raise `Side`, not projector brightness, because stray light makes shadows.
 6. **`cv2.aruco` API.** TouchDesigner bundles OpenCV 4.8, which uses the `ArucoDetector` class and `generateImageMarker`, not the older `drawMarker` and `detectMarkers` module functions. Confirm with `print(cv2.__version__)` in a Text DAT on first launch.
 
-## 8. Fallback sidecar changes (branch `webcam-sidecar`)
+## 8. Fallback sidecar (branch `webcam-sidecar-syphon`)
 
-The sidecar already produces a person mask and a smoothed relative depth at 518x392 and 30 fps. To feed TouchDesigner:
+Done on 2026-10-20. The sidecar publishes a Syphon server named `webcam-depth`: one 518x392 BGRA texture per frame, red = person mask, green = smoothed relative depth (larger is closer), blue = 0, alpha = 1, at 29 fps on an M2 Max. `depth.tox` reads it with a Syphon Spout In TOP set to that sender.
 
-1. Replace `FrameSender.swift` (TCP) with a Syphon server named `webcam-depth` that publishes one RGBA Metal texture per frame: red = mask, green = depth, blue = 0, alpha = 1. Add the Syphon framework as a Swift package dependency.
-2. Keep the `--alpha`, `--quality` and `--camera` options. Drop `--host` and `--port`.
-3. The Java receiver, Gradle files and Docker files stay on that branch as a record. Do not merge the branch into `main`.
+To run it, check out the branch, then:
+
+```bash
+tools/webcam-depth/fetch-model.sh
+```
+
+```bash
+tools/webcam-depth/fetch-syphon.sh
+```
+
+```bash
+cd tools/webcam-depth && swift run -c release webcam-depth
+```
+
+Start it from a Terminal panel tab, not from a sandboxed shell, or macOS cannot show the camera prompt. The TCP version stays on branch `webcam-sidecar` on origin. Neither branch is merged into `main`.

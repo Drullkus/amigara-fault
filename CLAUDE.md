@@ -8,7 +8,7 @@ Turn spatial depth into people-shaped holes in a wall.
 - Generate a visual or spatial feed with silhouettes of people.
   - Device: Xbox One Kinect v2 (time of flight, 512x424 depth at 30 fps, 0.5 to 4.5 m) with a USB 3 PC adapter. Chosen on 2026-10-19 after the research in `llm/transcripts/`.
   - Read in TouchDesigner through the FreenectTD plugin.
-  - Fallback input: the webcam sidecar on branch `webcam-sidecar` (Apple Vision person mask plus Depth Anything V2 depth), to be re-pointed from TCP to a Syphon texture.
+  - Fallback input: the webcam sidecar on branch `webcam-sidecar-syphon` (Apple Vision person mask plus Depth Anything V2 depth). It publishes a Syphon texture named `webcam-depth`, 518x392 BGRA: red = mask, green = depth (larger is closer), blue = 0, alpha = 1. A Syphon Spout In TOP reads it.
   - Processed by TouchDesigner with a streamed NDI output.
 - Projector that displays fiducials for viewing applications to align.
   - Only the white pixels for the fiducials. Otherwise brighter light causes shadows to be more prominent.
@@ -32,7 +32,8 @@ If the user asks for a task from you, you are required to use AskUserQuestions t
 - TouchDesigner Non-Commercial license: every TOP is capped at 1280x1280, so the projector output is 1280x720.
 - FreenectTD plugin (bundles libfreenect2) for the Kinect v2. The official Kinect operators are Windows only.
 - TouchDesigner's bundled Python and OpenCV (`cv2`, including `cv2.aruco`). Do not install extra packages into TouchDesigner's Python.
-- Branch `webcam-sidecar` keeps the earlier Java 25 receiver and Swift 6 sidecar. Do not delete that branch.
+- Branch `webcam-sidecar-syphon` holds the Swift 6 sidecar with the Syphon sender, plus the earlier Java 25 receiver as a record. Branch `webcam-sidecar` on origin is the TCP version. Do not merge either into `main`. Their `tools/webcam-depth/fetch-model.sh` and `fetch-syphon.sh` rebuild the gitignored model and Syphon framework.
+- FreenectTD installs as `Plugins/FreenectTOP.plugin` next to `amigara.toe`, from the `.pkg` installer of https://github.com/stosumarte/FreenectTD. The folder is gitignored; note the plugin version in the plan when it changes.
 
 ## Codebase conventions
 
@@ -43,6 +44,8 @@ If the user asks for a task from you, you are required to use AskUserQuestions t
 - Python lives in `td/scripts/` and GLSL in `td/shaders/`. Each DAT points at its file with the `file` parameter and syncs to it, so Git tracks readable code. Never keep code only inside a DAT.
 - Each `.tox` contains a Text DAT named `README` that says what the component does and carries the attribution line below.
 - Every Python file starts with a module docstring. Every GLSL file starts with a comment block.
+- Claude cannot open `.toe` or `.tox` files. Claude writes the Python, GLSL and step-by-step wiring instructions; the owner builds and saves the networks in TouchDesigner by hand and reports what they see.
+- TouchDesigner's `Backup/` folder and `CrashAutoSave.*` files are gitignored. Save a component with its `.tox` only after the owner confirms it works.
 
 ## AI attribution procedure
 
@@ -67,3 +70,4 @@ The repository owner cites AI-generated work, so every session Claude works in m
 - `--print-path` prints the repo-relative output path without writing anything.
 - `--include-results` embeds truncated tool output; `--max-chars N` changes the truncation limit (0 = unlimited); `-o <file>` or `-o -` overrides the destination.
 - Sessions are read from `~/.claude/projects/<project path with slashes replaced by dashes>/*.jsonl`; the desktop app's `local_…` session handle is not a file name.
+- A session that ran in a worktree is stored under the worktree's own folder name, for example `~/.claude/projects/-Users-drullkus-IdeaProjects-amigara-fault--claude-worktrees-<name>/<uuid>.jsonl`, so `--list` from the main checkout does not show it. Export it from the main checkout with `--file <that path>`, which still writes to `llm/transcripts/` here.
