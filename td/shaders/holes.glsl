@@ -48,8 +48,8 @@ uniform float uStripeLevel;
 out vec4 fragColor;
 
 // Projector light levels. Keep them low so the room stays dark.
-const vec3 wallColor = vec3(0.0);
-const vec3 lineColor = vec3(1.0);
+const vec3 wallColor = vec3(1.0);
+const vec3 lineColor = vec3(0.0);
 
 const float TWO_PI = 6.28318530718;
 
