@@ -48,3 +48,4 @@ models/
 Backup/
 CrashAutoSave.*
 Plugins/
+touch_designer/*.*.toe
