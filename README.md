@@ -7,3 +7,7 @@ Or you else will smack into the wall like Wile E. Coyote.
 ----
 
 Inspired by Junji Ito's <ins>The Enigma of the Amigara Fault</ins>: https://online.fliphtml5.com/yzfor/bbvo/
+
+----
+
+Uses https://github.com/stosumarte/FreenectTD third-party plugin for TouchDesigner
