@@ -1,6 +1,7 @@
 # TouchDesigner build plan
 
 Written by Claude Code; conversation transcript: `llm/transcripts/transcript_2026-10-20_05-59_12b2b778-e37d-4136-8eec-8bb322f30bd6.md`.
+Written by Claude Code; conversation transcript: `llm/transcripts/transcript_2026-10-23_00-50_3371a355-5494-4a81-9508-2e9728d3ec66.md`.
 
 This plan turns the objectives in `CLAUDE.md` into a TouchDesigner network. The owner made every decision below on 2026-10-19 and 2026-10-20.
 
@@ -12,7 +13,7 @@ This plan turns the objectives in `CLAUDE.md` into a TouchDesigner network. The 
 | Sensor position | Next to the projector, facing the people. The silhouette then aligns to the projector with one homography. |
 | Host | This Apple Silicon Mac, macOS 15 or newer. |
 | Software | TouchDesigner 2025.x, Non-Commercial license. Every TOP is capped at 1280x1280, so the projector output is 1280x720. |
-| Kinect driver | FreenectTD plugin (installer `.pkg`, needs TouchDesigner 2025 or newer). It bundles libfreenect2. The official Kinect operators are Windows only. |
+| Kinect driver | FreenectTD plugin 1.0.1 (installer `.pkg`, needs TouchDesigner 2025 or newer). It bundles libfreenect2 and installs globally under `~/Library/Application Support/Derivative/TouchDesigner099/Plugins`. The official Kinect operators are Windows only. |
 | Fallback input | The webcam sidecar on branch `webcam-sidecar`, re-pointed to publish a Syphon texture. |
 | Fiducials | Four ArUco markers from dictionary `DICT_4X4_50`, ids 0 to 3, one per corner, white on black. Drawn and detected with the OpenCV 4.8 that TouchDesigner bundles. |
 | Projector correction | Automatic: `cv2.findHomography` from the detected markers drives a Corner Pin TOP. Stoner is the manual override. |
@@ -35,7 +36,7 @@ td/scripts/*.py             every Script TOP, CHOP, DAT and Execute DAT, synced 
 td/shaders/*.glsl           every GLSL TOP and GLSL MAT
 docs/touchdesigner-plan.md  this file
 tools/webcam-depth/models/  the Core ML model, gitignored, fetched by the sidecar branch's script
-Plugins/FreenectTOP.plugin  the FreenectTD plugin, gitignored, from its .pkg installer
+Plugins/FreenectTOP.plugin  optional project-local copy of the FreenectTD plugin, gitignored; the .pkg installs it globally instead
 ```
 
 Rules:
@@ -50,7 +51,7 @@ Rules:
 
 Inputs: none (hardware). Outputs: `mask` (one channel, 0 to 1), `depth` (one channel, 0 near to 1 far inside the working range), `rgb` (the Kinect color camera), `head` CHOP (viewer x, y, z in meters, plus `valid`).
 
-1. One FreenectTD TOP, because the plugin allows one operator per machine. Render Select TOPs read index 1 (depth) and index 2 (point cloud); index 0 is RGB. Turn on depth registration so the depth lands in the RGB camera's pixel grid.
+1. One FreenectTD TOP, because the plugin allows one operator per machine. Set its Hardware Version parameter to "Kinect v2 (Xbox One)"; the default is v1 and reports "No Kinect v1 devices found". Render Select TOPs read index 1 (depth) and index 2 (point cloud); index 0 is RGB. Turn on depth registration so the depth lands in the RGB camera's pixel grid.
 2. A Syphon Spout In TOP set to the sender `webcam-depth` is the fallback. It carries the mask in red and the depth in green.
 3. A Switch TOP with the custom parameter `Source` (Kinect, Webcam) picks one.
 4. Custom parameters `Near` and `Far` in meters (defaults 2.5 and 6.5) clip the working range. A Threshold TOP between them makes the mask. A Level TOP maps the range to 0 to 1 for the `depth` output.

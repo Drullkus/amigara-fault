@@ -39,7 +39,7 @@ If the user asks for a task from you, you are required to use AskUserQuestions t
 - FreenectTD plugin (bundles libfreenect2) for the Kinect v2. The official Kinect operators are Windows only.
 - TouchDesigner's bundled Python and OpenCV (`cv2`, including `cv2.aruco`). Do not install extra packages into TouchDesigner's Python.
 - Branch `webcam-sidecar-syphon` holds the Swift 6 sidecar with the Syphon sender, plus the earlier Java 25 receiver as a record. Branch `webcam-sidecar` on origin is the TCP version. Do not merge either into `main`. Their `tools/webcam-depth/fetch-model.sh` and `fetch-syphon.sh` rebuild the gitignored model and Syphon framework.
-- FreenectTD installs as `Plugins/FreenectTOP.plugin` next to `amigara.toe`, from the `.pkg` installer of https://github.com/stosumarte/FreenectTD. The folder is gitignored; note the plugin version in the plan when it changes.
+- FreenectTD 1.0.1 is installed globally at `~/Library/Application Support/Derivative/TouchDesigner099/Plugins/FreenectTOP.plugin` by the `.pkg` installer of https://github.com/stosumarte/FreenectTD. A project-local copy would go in a gitignored `Plugins/` folder next to the `.toe`. Note the plugin version in the plan when it changes.
 
 ## Codebase conventions
 
