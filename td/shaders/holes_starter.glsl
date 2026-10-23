@@ -32,8 +32,8 @@ uniform float uRingWidth;
 out vec4 fragColor;
 
 // Projector light levels. Keep them low so the room stays dark.
-const vec3 wallColor = vec3(0.08);
-const vec3 lineColor = vec3(0.35);
+const vec3 wallColor = vec3(0.0);
+const vec3 lineColor = vec3(1.0);
 
 // textureLod avoids implicit derivatives, which are undefined inside the
 // divergent march loop and can fault the GPU on Metal.
