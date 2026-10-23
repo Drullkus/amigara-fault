@@ -3,3 +3,7 @@
 Turn spatial depth into people-shaped holes in a wall. Do not enter the hole.
 
 Or you else will smack into the wall like Wile E. Coyote.
+
+----
+
+Inspired by Junji Ito's <ins>The Enigma of the Amigara Fault</ins>: https://online.fliphtml5.com/yzfor/bbvo/
